@@ -14,9 +14,9 @@ public class InitializeDB
 {
     public static void main(String[] args) throws SQLException, IOException {
     	
-    	int[] blobSizes = {100};
-	  	int[] dbLengths = {1000};
-	  	int[] blobTypes = {1};
+    		int[] blobSizes = {100, 1000, 10000};
+	  	int[] dbLengths = {100, 1000, 10000};
+	  	int[] blobTypes = {0, 1};
 	  	Connection conn = null;
     
 	    // For DB of varying amount of rows
