@@ -22,7 +22,7 @@ class PopulateDB {
 	* @return String
 	* @throws SQLException
 	*/
-	public static String requestElement(String SQLquery) throws SQLException{
+	public static String requestElement(Connection conn, String SQLquery) throws SQLException{
 
 		String element = "";
 
@@ -50,7 +50,7 @@ class PopulateDB {
 	* @return [ArrayList<String>]
 	* @throws SQLException
 	*/
-	public static ArrayList<String> requestDetails(String SQLquery) throws SQLException{
+	public static ArrayList<String> requestDetails(Connection conn, String SQLquery) throws SQLException{
 
 		ArrayList<String> details = new ArrayList<String>();
 
@@ -83,12 +83,12 @@ class PopulateDB {
 	* @throws SQLException
 	* @throws ParseException
 	*/
-	public static void appendWriteTime(int i) throws SQLException, ParseException {
+	public static void appendWriteTime(Connection conn, int i) throws SQLException, ParseException {
 
-		String previousTimeStamp = requestElement("SELECT time_stamp FROM NormalThings WHERE Index_ID < " + i + " ORDER BY Index_ID DESC LIMIT 1");
-		String timeStamp = requestElement("SELECT time_stamp FROM NormalThings WHERE Index_ID < " + (i+1) + " ORDER BY Index_ID DESC LIMIT 1");
+		String previousTimeStamp = requestElement(conn, "SELECT time_stamp FROM NormalThings WHERE Index_ID < " + i + " ORDER BY Index_ID DESC LIMIT 1");
+		String timeStamp = requestElement(conn, "SELECT time_stamp FROM NormalThings WHERE Index_ID < " + (i+1) + " ORDER BY Index_ID DESC LIMIT 1");
 
-		Double writeTime = getWriteTime(timeStamp, previousTimeStamp);
+		Double writeTime = getWriteTime(conn, timeStamp, previousTimeStamp);
 
 		PreparedStatement statement = conn.prepareStatement("UPDATE NormalThings SET write_time=" + writeTime + " WHERE Index_ID=" + (i-1));
 		statement.executeUpdate();
@@ -110,9 +110,9 @@ class PopulateDB {
 	* @throws SQLException
 	* @throws ParseException
 	*/
-	public static Double getWriteTime(String timeStamp, String previousTimeStamp) throws SQLException, ParseException {
+	public static Double getWriteTime(Connection conn, String timeStamp, String previousTimeStamp) throws SQLException, ParseException {
 
-		String timeDiff = requestElement("SELECT (strftime('%f','" + timeStamp + "') - strftime('%f','" + previousTimeStamp + "'))");
+		String timeDiff = requestElement(conn, "SELECT (strftime('%f','" + timeStamp + "') - strftime('%f','" + previousTimeStamp + "'))");
 		Double writeTime = Double.parseDouble(timeDiff);
 		if (writeTime<0) writeTime += 60.0;
 		DecimalFormat df = new DecimalFormat("####0.000");      
@@ -130,7 +130,7 @@ class PopulateDB {
 	* @throws SQLException
 	* @throws ParseException
 	*/
-	public static void appendNormalThings(int i) throws SQLException, ParseException {
+	public static void appendNormalThings(Connection conn, int i) throws SQLException, ParseException {
 
 		PreparedStatement statement = conn.prepareStatement("INSERT INTO NormalThings(write_time, random_int, blob) VALUES (?, ?, ?)");
 
@@ -166,10 +166,10 @@ class PopulateDB {
 	* @throws JSONException
 	* @throws ParseException
 	*/
-	public static boolean populateDB(int i) throws SQLException, ParseException {
+	public static boolean populateDB(Connection conn, int i) throws SQLException, ParseException {
 
 		try {
-			appendNormalThings(i);
+			appendNormalThings(conn, i);
 			return true;
 		} catch(SQLException e) {
 			e.getMessage();
@@ -186,12 +186,12 @@ class PopulateDB {
 	* @throws SQLException
 	* @throws ParseException
 	*/
-	public static boolean updateDB() throws SQLException, ParseException {
+	public static boolean updateDB(Connection conn) throws SQLException, ParseException {
 
 		try {        	
 			int i = 2;        	
 			for (; i < dbLength+2; i++) {
-				appendWriteTime(i);
+				appendWriteTime(conn, i);
 			}
 			return true;
 
@@ -211,7 +211,7 @@ class PopulateDB {
 	* @throws SQLException
 	* @throws ParseException
 	*/
-	public static void deleteLastRow(int i) throws SQLException, ParseException {
+	public static void deleteLastRow(Connection conn, int i) throws SQLException, ParseException {
 
 		PreparedStatement statement = conn.prepareStatement("DELETE FROM NormalThings " 
 								  + "WHERE Index_ID=" + i + " AND write_time=0");
@@ -234,7 +234,7 @@ class PopulateDB {
 	* @return [int] Database Size in Bytes
 	* @throws SQLException
 	*/    
-	public static int getDBSize() throws SQLException {
+	public static int getDBSize(Connection conn) throws SQLException {
 
 		int DBSize = 0;
 
@@ -264,7 +264,7 @@ class PopulateDB {
 	* @return [int] Database rows #
 	* @throws SQLException
 	*/    
-	public static int getDBLength() throws SQLException {
+	public static int getDBLength(Connection conn) throws SQLException {
 
 	int rows = 0;
 
@@ -292,15 +292,15 @@ class PopulateDB {
 	* @return [String] Total Write Time
 	* @throws SQLException
 	*/    
-	public static String getTotalWriteTime() throws SQLException {
+	public static String getTotalWriteTime(Connection conn) throws SQLException {
 
-		String start = requestElement("SELECT time_stamp AS start FROM NormalThings WHERE Index_ID=1");
-		String end = requestElement("SELECT time_stamp AS end FROM NormalThings ORDER BY Index_ID DESC LIMIT 1");
+		String start = requestElement(conn, "SELECT time_stamp AS start FROM NormalThings WHERE Index_ID=1");
+		String end = requestElement(conn, "SELECT time_stamp AS end FROM NormalThings ORDER BY Index_ID DESC LIMIT 1");
 
 
-		int H = Integer.parseInt(requestElement("SELECT (strftime('%H', '" + end + "') - strftime('%H', '" + start + "'))"));
-		int M = Integer.parseInt(requestElement("SELECT (strftime('%M', '" + end + "') - strftime('%M', '" + start + "'))"));
-		double s = Double.valueOf(requestElement("SELECT (strftime('%f', '" + end + "') - strftime('%f', '" + start + "'))"));
+		int H = Integer.parseInt(requestElement(conn, "SELECT (strftime('%H', '" + end + "') - strftime('%H', '" + start + "'))"));
+		int M = Integer.parseInt(requestElement(conn, "SELECT (strftime('%M', '" + end + "') - strftime('%M', '" + start + "'))"));
+		double s = Double.valueOf(requestElement(conn, "SELECT (strftime('%f', '" + end + "') - strftime('%f', '" + start + "'))"));
 
 		// Avoiding negative seconds
 		if (s<0) {
@@ -338,9 +338,9 @@ class PopulateDB {
 	* @return [String] Total Write Time
 	* @throws SQLException
 	*/    
-	public static Double minWriteTime() throws SQLException {
+	public static Double minWriteTime(Connection conn) throws SQLException {
 
-		String request = requestElement("SELECT MIN(write_time) FROM NormalThings");
+		String request = requestElement(conn, "SELECT MIN(write_time) FROM NormalThings");
 		Double min = Double.valueOf(request);
 
 		return min;
@@ -354,9 +354,9 @@ class PopulateDB {
 	* @return [String] Total Write Time
 	* @throws SQLException
 	*/    
-	public static Double maxWriteTime() throws SQLException {
+	public static Double maxWriteTime(Connection conn) throws SQLException {
 
-		String request = requestElement("SELECT MAX(write_time) FROM NormalThings");
+		String request = requestElement(conn, "SELECT MAX(write_time) FROM NormalThings");
 		Double max = Double.valueOf(request);
 
 		return max;
@@ -370,9 +370,9 @@ class PopulateDB {
 	* @return [Double] Most Common Write Write Time
 	* @throws SQLException
 	*/    
-	public static Double mostCommonWT() throws SQLException {
+	public static Double mostCommonWT(Connection conn) throws SQLException {
 
-		String request = requestElement("SELECT COUNT(write_time) AS `val_occurrence` FROM NormalThings "
+		String request = requestElement(conn, "SELECT COUNT(write_time) AS `val_occurrence` FROM NormalThings "
 					+ "GROUP BY write_time ORDER BY `val_occurrence` DESC LIMIT 1");
 		Double writeTime = Double.valueOf(request);
 
@@ -388,9 +388,9 @@ class PopulateDB {
 	* @return [Double] Most Common Write Write Time
 	* @throws SQLException
 	*/    
-	public static int mostCommonWTOccurences(Double writeTime) throws SQLException {
+	public static int mostCommonWTOccurences(Connection conn, Double writeTime) throws SQLException {
 
-		String request = requestElement("SELECT COUNT(write_time) FROM "
+		String request = requestElement(conn, "SELECT COUNT(write_time) FROM "
 					 + "NormalThings WHERE write_time=" + writeTime);
 		int occurences = Integer.parseInt(request);
 
@@ -443,19 +443,19 @@ class PopulateDB {
 							// Populate Database
 							int d=0;
 							for (; d < dbLength+1 ; d++) { 
-								populateDB(d);
+								populateDB(conn, d);
 							}
-							updateDB(); // Update Write Times
-							deleteLastRow(getDBLength());
+							updateDB(conn); // Update Write Times
+							deleteLastRow(conn, getDBLength(conn));
 
-							String dbSize = new DecimalFormat("#,###").format(getDBSize());
+							String dbSize = new DecimalFormat("#,###").format(getDBSize(conn));
 
-							String writeTime = getTotalWriteTime();
-							Double minWriteTime = minWriteTime();
-							Double maxWriteTime = maxWriteTime();
-							Double mostCommonWT = mostCommonWT();
-							int mostCommonWTOccurences = mostCommonWTOccurences(mostCommonWT);
-							Double avrgWriteTime = writeTimeSeconds/getDBLength();
+							String writeTime = getTotalWriteTime(conn);
+							Double minWriteTime = minWriteTime(conn);
+							Double maxWriteTime = maxWriteTime(conn);
+							Double mostCommonWT = mostCommonWT(conn);
+							int mostCommonWTOccurences = mostCommonWTOccurences(conn, mostCommonWT);
+							Double avrgWriteTime = writeTimeSeconds/getDBLength(conn);
 							DecimalFormat df = new DecimalFormat("####0.000");      
 							avrgWriteTime = Double.valueOf(df.format(avrgWriteTime));
 
@@ -463,7 +463,7 @@ class PopulateDB {
 								System.out.println("Database Populated: Run " + (i+1)
 								+ "\n                    " + dbSize + " Bytes"
 								+ "\n                    " + blobSize  + " Bytes / " + blobType + " Binary Blob"
-								+ "\n                    " + getDBLength()  + " Lines"
+								+ "\n                    " + getDBLength(conn)  + " Lines"
 								+ "\n        Write time: " + writeTime  + "  (Average " + avrgWriteTime + " s)"
 								+ "\n                                 (Minimum " + minWriteTime + " s)"
 								+ "\n                                 (Maximum " + maxWriteTime + " s)"
